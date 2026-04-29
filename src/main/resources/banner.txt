@@ -9,5 +9,5 @@
  :: Monitoring MinIO buckets and registering CSV files as EDC assets ::
 
  ===================================================================================
- Health check: http://localhost:${server.port}/health
+ Health check: http://localhost:${server.port}/actuator/health
  ===================================================================================
