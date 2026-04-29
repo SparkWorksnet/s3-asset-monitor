@@ -1,0 +1,49 @@
+server:
+  port: 4001
+
+spring:
+  application:
+    name: s3-asset-monitor
+
+  banner:
+    location: classpath:banner.txt
+
+# MinIO connection
+minio:
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  access-key: ${MINIO_ACCESS_KEY:minioadmin}
+  secret-key: ${MINIO_SECRET_KEY:minioadmin}
+
+# Bucket monitor configuration
+monitor:
+  # Comma-separated or YAML list of bucket names to watch
+  buckets: ${MONITOR_BUCKETS:datalake}
+  # How often to poll each bucket (seconds)
+  poll-interval-seconds: ${MONITOR_POLL_INTERVAL_SECONDS:30}
+  # File extensions to watch (lowercase, including the dot)
+  file-extensions:
+    - .csv
+
+# DALI EDC Connector
+dali:
+  connector:
+    url: ${DALI_CONNECTOR_URL:}
+
+# Logging
+logging:
+  level:
+    root: INFO
+    net.sparkworks.datalake.monitor: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+---
+spring:
+  config:
+    activate:
+      on-profile: production
+
+logging:
+  level:
+    root: WARN
+    net.sparkworks.datalake.monitor: INFO
