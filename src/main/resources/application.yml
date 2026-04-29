@@ -29,6 +29,19 @@ dali:
   connector:
     url: ${DALI_CONNECTOR_URL:}
 
+# Spring Boot Actuator / Prometheus
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
 # Logging
 logging:
   level:
