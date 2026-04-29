@@ -56,10 +56,15 @@ public class EdcAssetRegistrationService {
         Map<String, String> context = new HashMap<>();
         context.put("@vocab", "https://w3id.org/edc/v0.0.1/ns/");
 
+        String fileName = extractFileName(objectKey);
+        Map<String, String> properties = new HashMap<>();
+        properties.put("name", fileName);
+        properties.put("contenttype", detectContentType(fileName));
+
         Map<String, Object> asset = new HashMap<>();
         asset.put("@context", context);
         asset.put("@id", assetId);
-        asset.put("properties", new HashMap<>());
+        asset.put("properties", properties);
         asset.put("dataAddress", dataAddress);
 
         String url = connectorProperties.getUrl() + "/management/v3/assets";
@@ -78,5 +83,23 @@ public class EdcAssetRegistrationService {
         } catch (Exception e) {
             logger.warn("⚠ Failed to register asset '{}': {}", assetId, e.getMessage());
         }
+    }
+
+    private String extractFileName(String objectKey) {
+        if (objectKey == null) return "unknown";
+        int lastSlash = objectKey.lastIndexOf('/');
+        return lastSlash >= 0 ? objectKey.substring(lastSlash + 1) : objectKey;
+    }
+
+    private String detectContentType(String fileName) {
+        if (fileName == null) return "application/octet-stream";
+        String lower = fileName.toLowerCase();
+        if (lower.endsWith(".csv"))  return "text/csv";
+        if (lower.endsWith(".json")) return "application/json";
+        if (lower.endsWith(".xml"))  return "application/xml";
+        if (lower.endsWith(".pdf"))  return "application/pdf";
+        if (lower.endsWith(".xlsx")) return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        if (lower.endsWith(".xls"))  return "application/vnd.ms-excel";
+        return "application/octet-stream";
     }
 }
