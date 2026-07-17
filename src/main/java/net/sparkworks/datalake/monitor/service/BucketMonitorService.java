@@ -129,7 +129,7 @@ public class BucketMonitorService {
                 if (seenKeys.add(sk)) {
                     logger.info("New file detected — bucket: '{}', key: '{}'", bucket, key);
                     try {
-                        registrationService.registerAsset(key, key, bucket);
+                        registrationService.registerAsset(registrationService.deriveAssetId(key), key, bucket);
                         m.registeredCounter.increment();
                         newCount++;
                     } catch (Exception e) {
