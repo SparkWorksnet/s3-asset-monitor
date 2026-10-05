@@ -230,6 +230,7 @@ public class BucketMonitorService {
                 Item item = result.get();
                 if (item.isDir()) continue;
                 String key = item.objectName();
+                if (isHidden(key)) continue;
                 String keyLower = key.toLowerCase();
                 if (piveauService.isEnabled() && piveauService.isMetadataFile(key)) {
                     matched.add(key);
@@ -247,6 +248,21 @@ public class BucketMonitorService {
         }
 
         return matched;
+    }
+
+    /**
+     * Whether an object is internal bookkeeping rather than data: any path segment starting with
+     * a dot, e.g. the testbed connector's {@code .datasets/} and {@code .files/} UUID mappings.
+     * Those can end in a watched extension (a mapping named after a {@code .csv} file), so they
+     * must not be taken for data files.
+     */
+    static boolean isHidden(String objectKey) {
+        for (String segment : objectKey.split("/")) {
+            if (segment.startsWith(".")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private String seenKey(String bucket, String objectKey) {

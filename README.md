@@ -13,6 +13,8 @@ Testbed connectors only write files into the lake; they no longer talk to Piveau
 
 ## How it works
 
+- Objects under a path segment starting with a dot (e.g. `.datasets/`, `.files/`, the testbed
+  connector's UUID mappings) are bookkeeping and are ignored, even if they end in `.csv`.
 - On startup every existing matching file is marked as seen and skipped. Only files that appear
   afterwards are handled.
 - Each poll (`monitor.poll-interval-seconds`) handles new files, `metadata.json` first, so a
