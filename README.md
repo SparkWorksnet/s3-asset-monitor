@@ -67,3 +67,15 @@ confidential client's service account, scoped to specific catalogues. Do this on
 
 Rotate by regenerating the secret and updating `PIVEAU_KEYCLOAK_CLIENT_SECRET`. Revoke by
 removing the service account from the catalogue's group.
+
+## Possible improvements
+
+- **Show the original file name in Piveau.** Testbed connectors store each data file in the lake
+  as `<dataset-uuid>/<random-uuid>.csv` and keep the file's original name as the object's
+  `original-name` user metadata (URL-encoded). The monitor does not use it, so a distribution's
+  `dct:title` is the UUID file name. To show the original name, call `statObject` for each new
+  file in `PiveauRegistrationService.registerDistribution`, URL-decode
+  `userMetadata().get("original-name")` and use it for `dct:title` and `dct:description`, falling
+  back to the object's file name when the metadata is missing (older files, or a store that does
+  not keep user metadata). The URLs, `dali:assetId`, format and media type do not change. Costs
+  one extra request per new file.
