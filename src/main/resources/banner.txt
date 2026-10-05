@@ -6,7 +6,7 @@
  |____/  |____/     /_/   \_\|___/___/\___|\__| |_|  |_|\___/|_| |_| |_| \__|\___/|_|
 
  :: Spring Boot ${spring-boot.version} ::
- :: Monitoring MinIO buckets and registering CSV files as EDC assets ::
+ :: Monitoring S3 buckets and registering CSV files as EDC assets ::
 
  ===================================================================================
  Health check: http://localhost:${server.port}/actuator/health

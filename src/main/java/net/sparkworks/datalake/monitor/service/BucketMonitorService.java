@@ -9,28 +9,38 @@ import io.minio.Result;
 import io.minio.messages.Item;
 import jakarta.annotation.PostConstruct;
 import net.sparkworks.datalake.monitor.config.MonitorProperties;
+import net.sparkworks.datalake.monitor.config.PiveauProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Periodically polls configured MinIO buckets for new files.
+ * Periodically polls configured S3 buckets for new files and handles each one:
+ * <ul>
+ *   <li>a dataset's {@code metadata.json} is registered as a dataset in the Piveau catalogue;</li>
+ *   <li>a data file (see {@code monitor.file-extensions}) is registered as an EDC asset and then
+ *       added to its dataset in Piveau as a distribution.</li>
+ * </ul>
  * On startup all existing objects are marked as seen without being registered,
- * so only files that appear after the monitor starts will be registered as EDC assets.
+ * so only files that appear after the monitor starts are handled.
+ *
+ * <p>A file whose handling fails (or whose dataset is not in Piveau yet) is left unseen and
+ * retried on the next poll, up to {@code piveau.max-attempts} times.
  *
  * <p>Exposed Prometheus metrics:
  * <ul>
  *   <li>{@code s3_monitor_poll_total{bucket}} — poll cycles executed per bucket</li>
  *   <li>{@code s3_monitor_files_discovered_total{bucket}} — matching files seen per poll</li>
- *   <li>{@code s3_monitor_files_registered_total{bucket}} — newly registered files</li>
- *   <li>{@code s3_monitor_registration_errors_total{bucket}} — failed registrations</li>
+ *   <li>{@code s3_monitor_files_registered_total{bucket}} — files fully handled (asset and catalogue)</li>
+ *   <li>{@code s3_monitor_registration_errors_total{bucket}} — failed registration attempts</li>
  *   <li>{@code s3_monitor_seen_keys} — gauge: total size of the seen-keys set</li>
  *   <li>{@code s3_monitor_poll_duration_seconds{bucket}} — wall-clock time per poll cycle</li>
  * </ul>
@@ -43,10 +53,15 @@ public class BucketMonitorService {
     private final MinioClient minioClient;
     private final MonitorProperties monitorProperties;
     private final EdcAssetRegistrationService registrationService;
+    private final PiveauRegistrationService piveauService;
+    private final PiveauProperties piveauProperties;
     private final MeterRegistry meterRegistry;
 
     /** Tracks bucket:objectKey pairs that have already been registered (or skipped on startup). */
     private final Set<String> seenKeys = ConcurrentHashMap.newKeySet();
+
+    /** Failed or not-yet-possible attempts per bucket:objectKey, to cap retries. */
+    private final Map<String, Integer> attempts = new ConcurrentHashMap<>();
 
     /** Per-bucket counters and timers, created lazily on first poll of each bucket. */
     private final Map<String, Counter> pollCounters = new ConcurrentHashMap<>();
@@ -60,10 +75,14 @@ public class BucketMonitorService {
     public BucketMonitorService(MinioClient minioClient,
                                 MonitorProperties monitorProperties,
                                 EdcAssetRegistrationService registrationService,
+                                PiveauRegistrationService piveauService,
+                                PiveauProperties piveauProperties,
                                 MeterRegistry meterRegistry) {
         this.minioClient = minioClient;
         this.monitorProperties = monitorProperties;
         this.registrationService = registrationService;
+        this.piveauService = piveauService;
+        this.piveauProperties = piveauProperties;
         this.meterRegistry = meterRegistry;
     }
 
@@ -123,26 +142,35 @@ public class BucketMonitorService {
             List<String> objectKeys = listMatchingObjects(bucket);
             m.discoveredCounter.increment(objectKeys.size());
 
+            // A dataset's metadata.json must be registered before its data files can be added to
+            // it as distributions, and the listing is alphabetical, so handle metadata files first.
+            List<String> ordered = new ArrayList<>(objectKeys);
+            ordered.sort(Comparator.comparing(piveauService::isMetadataFile).reversed());
+
             int newCount = 0;
-            for (String key : objectKeys) {
+            for (String key : ordered) {
                 String sk = seenKey(bucket, key);
-                if (seenKeys.add(sk)) {
-                    logger.info("New file detected — bucket: '{}', key: '{}'", bucket, key);
-                    try {
-                        registrationService.registerAsset(registrationService.deriveAssetId(key), key, bucket);
+                if (!seenKeys.add(sk)) {
+                    continue;
+                }
+                logger.info("New file detected — bucket: '{}', key: '{}'", bucket, key);
+                try {
+                    if (handleFile(bucket, key)) {
+                        attempts.remove(sk);
                         m.registeredCounter.increment();
                         newCount++;
-                    } catch (Exception e) {
-                        m.errorCounter.increment();
-                        logger.warn("Failed to register '{}' in bucket '{}': {}", key, bucket, e.getMessage());
-                        // Remove from seen so it is retried on the next poll
-                        seenKeys.remove(sk);
+                    } else {
+                        retryLater(sk, bucket, key, "its dataset is not in Piveau yet");
                     }
+                } catch (Exception e) {
+                    m.errorCounter.increment();
+                    logger.warn("Failed to handle '{}' in bucket '{}': {}", key, bucket, e.getMessage());
+                    retryLater(sk, bucket, key, e.getMessage());
                 }
             }
 
             if (newCount > 0) {
-                logger.info("Bucket '{}': registered {} new file(s)", bucket, newCount);
+                logger.info("Bucket '{}': handled {} new file(s)", bucket, newCount);
             } else {
                 logger.debug("Bucket '{}': no new files", bucket);
             }
@@ -153,7 +181,38 @@ public class BucketMonitorService {
     }
 
     /**
-     * List all objects in {@code bucket} whose names end with one of the configured extensions.
+     * Handle one new object.
+     *
+     * @return {@code true} when done, {@code false} when it cannot be completed yet and should be retried
+     */
+    private boolean handleFile(String bucket, String key) throws Exception {
+        if (piveauService.isMetadataFile(key)) {
+            piveauService.registerDataset(bucket, key);
+            return true;
+        }
+
+        String assetId = registrationService.deriveAssetId(key);
+        registrationService.registerAsset(assetId, key, bucket);
+        return !piveauService.isEnabled() || piveauService.registerDistribution(bucket, key, assetId);
+    }
+
+    /**
+     * Leave a file unseen so the next poll picks it up again, unless it has used up its attempts,
+     * in which case it stays seen (skipped until the monitor restarts).
+     */
+    private void retryLater(String seenKey, String bucket, String key, String reason) {
+        int attempt = attempts.merge(seenKey, 1, Integer::sum);
+        if (attempt >= piveauProperties.getMaxAttempts()) {
+            attempts.remove(seenKey);
+            logger.warn("Giving up on '{}' in bucket '{}' after {} attempts: {}", key, bucket, attempt, reason);
+            return;
+        }
+        seenKeys.remove(seenKey);
+    }
+
+    /**
+     * List all objects in {@code bucket} whose names end with one of the configured extensions, plus
+     * the dataset metadata files when Piveau registration is enabled.
      */
     private List<String> listMatchingObjects(String bucket) {
         List<String> matched = new ArrayList<>();
@@ -172,6 +231,10 @@ public class BucketMonitorService {
                 if (item.isDir()) continue;
                 String key = item.objectName();
                 String keyLower = key.toLowerCase();
+                if (piveauService.isEnabled() && piveauService.isMetadataFile(key)) {
+                    matched.add(key);
+                    continue;
+                }
                 for (String ext : extensions) {
                     if (keyLower.endsWith(ext)) {
                         matched.add(key);

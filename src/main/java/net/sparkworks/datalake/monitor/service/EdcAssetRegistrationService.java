@@ -1,7 +1,7 @@
 package net.sparkworks.datalake.monitor.service;
 
 import net.sparkworks.datalake.monitor.config.DaliConnectorProperties;
-import net.sparkworks.datalake.monitor.config.MinioProperties;
+import net.sparkworks.datalake.monitor.config.S3Properties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Registers files discovered in MinIO as assets in the DALI EDC connector Management API —
+ * Registers files discovered in S3 as assets in the DALI EDC connector Management API —
  * mirrors dataops-orchestrator's edc_client.py (the "upload form" path's own asset
  * registration step), so assets from either source share the same connector-side shape
  * and are equally negotiable: same dataAddress type, and the same shared
@@ -34,23 +34,23 @@ public class EdcAssetRegistrationService {
     private static final String CONTRACT_DEFINITION_ID = "dali-contract-definition";
 
     private final DaliConnectorProperties connectorProperties;
-    private final MinioProperties minioProperties;
+    private final S3Properties s3Properties;
     private final RestClient restClient;
 
     public EdcAssetRegistrationService(DaliConnectorProperties connectorProperties,
-                                       MinioProperties minioProperties) {
+                                       S3Properties s3Properties) {
         this.connectorProperties = connectorProperties;
-        this.minioProperties = minioProperties;
+        this.s3Properties = s3Properties;
         this.restClient = RestClient.create();
         logger.info("EdcAssetRegistrationService initialized — connector URL: {}", connectorProperties.getUrl());
     }
 
     /**
-     * Register a MinIO object as an asset in the DALI EDC connector.
+     * Register an S3 object as an asset in the DALI EDC connector.
      *
      * @param assetId    the asset ID (used as the EDC asset @id)
      * @param objectKey  the full object key / path within the bucket
-     * @param bucketName the MinIO bucket containing the object
+     * @param bucketName the S3 bucket containing the object
      */
     public void registerAsset(String assetId, String objectKey, String bucketName) {
         if (!StringUtils.hasText(connectorProperties.getUrl())) {
@@ -64,9 +64,9 @@ public class EdcAssetRegistrationService {
         dataAddress.put("type", "MinioAsset");
         dataAddress.put("bucketName", bucketName);
         dataAddress.put("prefix", objectKey);
-        dataAddress.put("endpoint", minioProperties.getEndpoint());
-        dataAddress.put("accessKey", minioProperties.getAccessKey());
-        dataAddress.put("secretKey", minioProperties.getSecretKey());
+        dataAddress.put("endpoint", s3Properties.getEndpoint());
+        dataAddress.put("accessKey", s3Properties.getAccessKey());
+        dataAddress.put("secretKey", s3Properties.getSecretKey());
 
         Map<String, String> context = new HashMap<>();
         context.put("@vocab", "https://w3id.org/edc/v0.0.1/ns/");

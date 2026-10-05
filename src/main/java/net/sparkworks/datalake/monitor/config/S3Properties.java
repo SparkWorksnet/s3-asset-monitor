@@ -5,19 +5,19 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Configuration properties for connecting to MinIO / S3-compatible storage.
+ * Configuration properties for connecting to S3-compatible storage (MinIO, RustFS, AWS S3, ...).
  */
 @Data
 @Configuration
-@ConfigurationProperties(prefix = "minio")
-public class MinioProperties {
+@ConfigurationProperties(prefix = "s3")
+public class S3Properties {
 
-    /** MinIO server endpoint, e.g. http://localhost:9000 */
+    /** S3 endpoint, e.g. http://localhost:9000 */
     private String endpoint;
 
-    /** MinIO access key */
+    /** S3 access key */
     private String accessKey;
 
-    /** MinIO secret key */
+    /** S3 secret key */
     private String secretKey;
 }

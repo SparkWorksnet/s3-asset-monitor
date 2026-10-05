@@ -16,7 +16,7 @@ import java.util.List;
 public class MonitorProperties {
 
     /**
-     * List of MinIO bucket names to monitor.
+     * List of S3 bucket names to monitor.
      * Each bucket is scanned independently on every poll cycle.
      */
     private List<String> buckets = new ArrayList<>();
@@ -31,4 +31,11 @@ public class MonitorProperties {
      * Files whose names end with any of these extensions will be registered.
      */
     private List<String> fileExtensions = List.of(".csv");
+
+    /**
+     * Name of the per-dataset metadata file (case-insensitive) that describes the dataset in
+     * the Piveau catalogue. It sits next to the data files, in the dataset's directory, and
+     * is registered as a dataset rather than as an EDC asset.
+     */
+    private String metadataFileName = "metadata.json";
 }

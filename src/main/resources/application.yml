@@ -8,11 +8,11 @@ spring:
   banner:
     location: classpath:banner.txt
 
-# MinIO connection
-minio:
-  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
-  access-key: ${MINIO_ACCESS_KEY:minioadmin}
-  secret-key: ${MINIO_SECRET_KEY:minioadmin}
+# S3 connection (any S3-compatible store: MinIO, RustFS, AWS S3, ...)
+s3:
+  endpoint: ${S3_ENDPOINT:http://localhost:9000}
+  access-key: ${S3_ACCESS_KEY:minioadmin}
+  secret-key: ${S3_SECRET_KEY:minioadmin}
 
 # Bucket monitor configuration
 monitor:
@@ -23,11 +23,27 @@ monitor:
   # File extensions to watch (lowercase, including the dot)
   file-extensions:
     - .csv
+  # Per-dataset metadata file, registered in Piveau as the dataset (needs piveau.url)
+  metadata-file-name: ${MONITOR_METADATA_FILE_NAME:metadata.json}
 
 # DALI EDC Connector
 dali:
   connector:
+    # Management API base URL, used to register each file as an EDC asset
     url: ${DALI_CONNECTOR_URL:}
+    # Public connector URL written as dcat:accessURL on Piveau distributions (defaults to url)
+    access-url: ${DALI_CONNECTOR_ACCESS_URL:}
+
+# Piveau Hub Repo (catalogue). Leave PIVEAU_URL empty to disable catalogue registration.
+# Auth: OAuth2 client-credentials when all three PIVEAU_KEYCLOAK_* are set, else PIVEAU_API_KEY.
+piveau:
+  url: ${PIVEAU_URL:}
+  api-key: ${PIVEAU_API_KEY:}
+  keycloak-token-url: ${PIVEAU_KEYCLOAK_TOKEN_URL:}
+  keycloak-client-id: ${PIVEAU_KEYCLOAK_CLIENT_ID:}
+  keycloak-client-secret: ${PIVEAU_KEYCLOAK_CLIENT_SECRET:}
+  # Polls a file is retried for (e.g. a CSV waiting for its dataset's metadata.json)
+  max-attempts: ${PIVEAU_MAX_ATTEMPTS:20}
 
 # Spring Boot Actuator / Prometheus
 management:
