@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
 import net.sparkworks.datalake.monitor.config.DaliConnectorProperties;
-import net.sparkworks.datalake.monitor.config.MinioProperties;
+import net.sparkworks.datalake.monitor.config.S3Properties;
 import net.sparkworks.datalake.monitor.config.MonitorProperties;
 import net.sparkworks.datalake.monitor.piveau.DatasetMetadata;
 import net.sparkworks.datalake.monitor.piveau.DcatTurtleBuilder;
@@ -42,7 +42,7 @@ public class PiveauRegistrationService {
 
     private final PiveauClient piveau;
     private final MinioClient minioClient;
-    private final MinioProperties minioProperties;
+    private final S3Properties s3Properties;
     private final MonitorProperties monitorProperties;
     private final DaliConnectorProperties connectorProperties;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -54,11 +54,11 @@ public class PiveauRegistrationService {
      */
     private final Map<String, DatasetMetadata> metadataCache = new ConcurrentHashMap<>();
 
-    public PiveauRegistrationService(PiveauClient piveau, MinioClient minioClient, MinioProperties minioProperties,
+    public PiveauRegistrationService(PiveauClient piveau, MinioClient minioClient, S3Properties s3Properties,
                                      MonitorProperties monitorProperties, DaliConnectorProperties connectorProperties) {
         this.piveau = piveau;
         this.minioClient = minioClient;
-        this.minioProperties = minioProperties;
+        this.s3Properties = s3Properties;
         this.monitorProperties = monitorProperties;
         this.connectorProperties = connectorProperties;
     }
@@ -172,7 +172,7 @@ public class PiveauRegistrationService {
 
     /** The file's actual S3 URL, written as dcat:downloadURL (distinct from dcat:accessURL, the connector). */
     private String downloadUrl(String bucket, String objectKey) {
-        String endpoint = minioProperties.getEndpoint();
+        String endpoint = s3Properties.getEndpoint();
         if (!StringUtils.hasText(endpoint)) {
             return null;
         }

@@ -1,6 +1,6 @@
 # s3-asset-monitor
 
-Watches the 6G-DALI data lake (MinIO / S3) and, for every new file, makes it available in the
+Watches the 6G-DALI data lake (S3-compatible storage) and, for every new file, makes it available in the
 data space:
 
 | New file | What the monitor does |
@@ -30,7 +30,7 @@ Testbed connectors only write files into the lake; they no longer talk to Piveau
 
 | Environment variable | Default | Meaning |
 |---|---|---|
-| `MINIO_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY` | | Data lake connection |
+| `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` | | Data lake connection (any S3-compatible store) |
 | `MONITOR_BUCKETS` | `datalake` | Buckets to watch (comma-separated) |
 | `MONITOR_POLL_INTERVAL_SECONDS` | `30` | Poll interval |
 | `MONITOR_METADATA_FILE_NAME` | `metadata.json` | Per-dataset metadata file name (case-insensitive) |

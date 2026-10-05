@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
- * Spring Boot application that monitors S3/MinIO buckets for new CSV files
+ * Spring Boot application that monitors S3 buckets for new CSV files
  * and registers them as assets in the DALI EDC connector.
  */
 @SpringBootApplication

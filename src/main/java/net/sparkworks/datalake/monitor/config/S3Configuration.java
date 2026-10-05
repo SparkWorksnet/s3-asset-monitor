@@ -7,26 +7,26 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Spring configuration for the MinIO client.
+ * Spring configuration for the S3 client (the MinIO SDK, which works with any S3-compatible store).
  */
 @Configuration
-public class MinioConfiguration {
+public class S3Configuration {
 
-    private static final Logger logger = LoggerFactory.getLogger(MinioConfiguration.class);
+    private static final Logger logger = LoggerFactory.getLogger(S3Configuration.class);
 
     @Bean
-    public MinioClient minioClient(MinioProperties properties) {
+    public MinioClient minioClient(S3Properties properties) {
         if (properties.getEndpoint() == null || properties.getEndpoint().isBlank()) {
-            throw new IllegalStateException("minio.endpoint is required");
+            throw new IllegalStateException("s3.endpoint is required");
         }
         if (properties.getAccessKey() == null || properties.getAccessKey().isBlank()) {
-            throw new IllegalStateException("minio.access-key is required");
+            throw new IllegalStateException("s3.access-key is required");
         }
         if (properties.getSecretKey() == null || properties.getSecretKey().isBlank()) {
-            throw new IllegalStateException("minio.secret-key is required");
+            throw new IllegalStateException("s3.secret-key is required");
         }
 
-        logger.info("Creating MinIO client — endpoint: {}", properties.getEndpoint());
+        logger.info("Creating S3 client — endpoint: {}", properties.getEndpoint());
 
         return MinioClient.builder()
                 .endpoint(properties.getEndpoint())

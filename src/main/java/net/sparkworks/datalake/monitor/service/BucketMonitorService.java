@@ -23,7 +23,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Periodically polls configured MinIO buckets for new files and handles each one:
+ * Periodically polls configured S3 buckets for new files and handles each one:
  * <ul>
  *   <li>a dataset's {@code metadata.json} is registered as a dataset in the Piveau catalogue;</li>
  *   <li>a data file (see {@code monitor.file-extensions}) is registered as an EDC asset and then

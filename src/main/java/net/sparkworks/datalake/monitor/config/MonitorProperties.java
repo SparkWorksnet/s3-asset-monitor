@@ -16,7 +16,7 @@ import java.util.List;
 public class MonitorProperties {
 
     /**
-     * List of MinIO bucket names to monitor.
+     * List of S3 bucket names to monitor.
      * Each bucket is scanned independently on every poll cycle.
      */
     private List<String> buckets = new ArrayList<>();
