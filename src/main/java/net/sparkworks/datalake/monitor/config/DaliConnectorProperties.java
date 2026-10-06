@@ -25,6 +25,12 @@ public class DaliConnectorProperties {
      */
     private String accessUrl;
 
+    /**
+     * API key of the connector Management API, sent as the {@code X-Api-Key} header. Leave
+     * empty for a connector without one.
+     */
+    private String apiKey;
+
     public String effectiveAccessUrl() {
         return accessUrl != null && !accessUrl.isBlank() ? accessUrl : url;
     }

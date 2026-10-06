@@ -31,6 +31,8 @@ dali:
   connector:
     # Management API base URL, used to register each file as an EDC asset
     url: ${DALI_CONNECTOR_URL:}
+    # API key for the Management API (X-Api-Key); empty = no header
+    api-key: ${DALI_CONNECTOR_API_KEY:}
     # Public connector URL written as dcat:accessURL on Piveau distributions (defaults to url)
     access-url: ${DALI_CONNECTOR_ACCESS_URL:}
 

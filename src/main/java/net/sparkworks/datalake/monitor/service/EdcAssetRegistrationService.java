@@ -4,6 +4,7 @@ import net.sparkworks.datalake.monitor.config.DaliConnectorProperties;
 import net.sparkworks.datalake.monitor.config.S3Properties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -90,6 +91,7 @@ public class EdcAssetRegistrationService {
             restClient.post()
                     .uri(url)
                     .contentType(MediaType.APPLICATION_JSON)
+                    .headers(this::addApiKey)
                     .body(asset)
                     .retrieve()
                     .toBodilessEntity();
@@ -124,6 +126,7 @@ public class EdcAssetRegistrationService {
             restClient.post()
                     .uri(connectorProperties.getUrl() + "/management/v3/policydefinitions")
                     .contentType(MediaType.APPLICATION_JSON)
+                    .headers(this::addApiKey)
                     .body(policy)
                     .retrieve()
                     .toBodilessEntity();
@@ -144,6 +147,7 @@ public class EdcAssetRegistrationService {
             restClient.post()
                     .uri(connectorProperties.getUrl() + "/management/v3/contractdefinitions")
                     .contentType(MediaType.APPLICATION_JSON)
+                    .headers(this::addApiKey)
                     .body(contractDefinition)
                     .retrieve()
                     .toBodilessEntity();
@@ -189,5 +193,12 @@ public class EdcAssetRegistrationService {
         if (lower.endsWith(".xlsx"))    return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
         if (lower.endsWith(".xls"))     return "application/vnd.ms-excel";
         return "application/octet-stream";
+    }
+
+    private void addApiKey(HttpHeaders headers) {
+        String apiKey = connectorProperties.getApiKey();
+        if (StringUtils.hasText(apiKey)) {
+            headers.set("X-Api-Key", apiKey);
+        }
     }
 }
