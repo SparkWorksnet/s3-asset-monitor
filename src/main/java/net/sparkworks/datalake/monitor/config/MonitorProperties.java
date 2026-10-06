@@ -38,4 +38,12 @@ public class MonitorProperties {
      * is registered as a dataset rather than as an EDC asset.
      */
     private String metadataFileName = "metadata.json";
+
+    /**
+     * Regular expressions matched (find, not full match) against the file name, the last path
+     * segment of an object key. A file that matches any of them is ignored: it is not registered
+     * as an asset or a distribution. The default skips the files the DataOps pipeline writes next
+     * to a distribution, named {@code <asset-id>_<yyyyMMdd'T'HHmmss'Z'>_raw.csv} and so on.
+     */
+    private List<String> ignorePatterns = List.of("_\\d{8}T\\d{6}Z[_.]");
 }

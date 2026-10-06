@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
 /**
  * Periodically polls configured S3 buckets for new files and handles each one:
@@ -56,6 +57,7 @@ public class BucketMonitorService {
     private final PiveauRegistrationService piveauService;
     private final PiveauProperties piveauProperties;
     private final MeterRegistry meterRegistry;
+    private final List<Pattern> ignorePatterns;
 
     /** Tracks bucket:objectKey pairs that have already been registered (or skipped on startup). */
     private final Set<String> seenKeys = ConcurrentHashMap.newKeySet();
@@ -84,6 +86,7 @@ public class BucketMonitorService {
         this.piveauService = piveauService;
         this.piveauProperties = piveauProperties;
         this.meterRegistry = meterRegistry;
+        this.ignorePatterns = monitorProperties.getIgnorePatterns().stream().map(Pattern::compile).toList();
     }
 
     /**
@@ -230,7 +233,7 @@ public class BucketMonitorService {
                 Item item = result.get();
                 if (item.isDir()) continue;
                 String key = item.objectName();
-                if (isHidden(key)) continue;
+                if (isHidden(key) || isIgnored(key, ignorePatterns)) continue;
                 String keyLower = key.toLowerCase();
                 if (piveauService.isEnabled() && piveauService.isMetadataFile(key)) {
                     matched.add(key);
@@ -259,6 +262,20 @@ public class BucketMonitorService {
     static boolean isHidden(String objectKey) {
         for (String segment : objectKey.split("/")) {
             if (segment.startsWith(".")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * True when the file name (the last segment of the key) matches one of the patterns, which
+     * marks it as generated rather than uploaded data, e.g. the DataOps pipeline's outputs.
+     */
+    static boolean isIgnored(String objectKey, List<Pattern> patterns) {
+        String fileName = objectKey.substring(objectKey.lastIndexOf('/') + 1);
+        for (Pattern pattern : patterns) {
+            if (pattern.matcher(fileName).find()) {
                 return true;
             }
         }

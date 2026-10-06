@@ -36,6 +36,7 @@ Testbed connectors only write files into the lake; they no longer talk to Piveau
 | `MONITOR_BUCKETS` | `datalake` | Buckets to watch (comma-separated) |
 | `MONITOR_POLL_INTERVAL_SECONDS` | `30` | Poll interval |
 | `MONITOR_METADATA_FILE_NAME` | `metadata.json` | Per-dataset metadata file name (case-insensitive) |
+| `MONITOR_IGNORE_PATTERNS` | `_\d{8}T\d{6}Z[_.]` | Regexes (comma-separated) matched against the file name. Matching files are not registered. The default skips the DataOps pipeline's outputs (`<asset-id>_<timestamp>_raw.csv`, `_remediated.csv`, `_soft_cleaned.csv`, ...). |
 | `DALI_CONNECTOR_URL` | | Connector management API base URL. Empty disables EDC asset registration. |
 | `DALI_CONNECTOR_ACCESS_URL` | `DALI_CONNECTOR_URL` | Public connector URL for `dcat:accessURL` |
 | `PIVEAU_URL` | | Piveau Hub Repo dataset API, e.g. `https://dataspace.6gdali.eu/datasets`. Empty disables catalogue registration. |
